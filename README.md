@@ -6,5 +6,10 @@ This repository contains code and data necessary to reproduce the analysis inclu
 Baseline input files for the Storm Water Management Model (SWMM) are included. "SHC_NEW_event_noflood.inp" is used in the design storm modeling and "SHC_NEW_snow.inp" is used for the continuous simulations. Differences between the two are minor and mainly consistent of differences in control parameters (e.g., simulation period, etc.) and the incorporation of temperature and wind climate data for the continuous simulations. The baseline SWMM model for Shayler Crossing was graciously provided by Drs. Joong Gwang Lee and Christopher Nietch.
 
 ## Data
-This folder contains climate and precipitation necessary for both the design storm and continuous simulations for each of the nine cities included in this analysis. "City_design_stormsv2.csv" contains the NRCS 24-hour design storm temporal patterns specific to each city. "CITYNAME_IDF.csv" contains the precipitation depths for different duration and reccurrence intervals for each city (mostly from NOAA's Atlas 14 web server).
+This folder contains climate and precipitation necessary for both the design storm and continuous simulations for each of the nine cities included in this analysis. "City_design_stormsv2.csv" contains the NRCS 24-hour design storm temporal patterns specific to each city. "CITYNAME_IDF.csv" contains the precipitation depths for different duration and reccurrence intervals for each city (mostly from NOAA's Atlas 14 web server). "Daily station Temp.Rdata" and "Hourly Station Precip.Rdata" include observed climate data from each city for use in the continuous SWMM simulations. These data were obtained using the "NOAA Rainfall_Redacted.R" script.
+
+## R Scripts
+This folder contains R scripts used in this analysis - including scripts for creating SWMM input files, running the models, and analyzing results.
+
+"
 
