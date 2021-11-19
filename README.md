@@ -11,5 +11,21 @@ This folder contains climate and precipitation necessary for both the design sto
 ## R Scripts
 This folder contains R scripts used in this analysis - including scripts for creating SWMM input files, running the models, and analyzing results.
 
-"
+"City 24-hr storms.R" - This script runs SWMM models for each city for 24-hour design storms of various recurrence intervals. These results are then analyzed using various included functions.
 
+"Create SWMM Climate Files.R" - This script converts observed hourly precipitation and daily temperature and wind for each city into input files that can be read by SWMM.
+
+"NOAA Rainfall_redacted.R" - This script obtains continuous climate data for each city from NOAA COOP stations.
+
+"Run SWMM Function.R" - This script has two functions for creating SWMM input files for all continuous and design storm simulations.
+
+"SWMM_Cities_Analysis.R" - This script runs continuous SWMM models for each city and analyzes the results.
+
+"Storm event analysis.R" - This script performs a storm event analysis on the hourly rainfall data for each city. This includes separating rainfall data into discrete storm events and calculating metrics for each storm (e.g., total rainfall, mean intensity). These data are used to analyze the performance of bioretention areas for all continuous SWMM simulations.
+
+"City Continuous Event Plots.Rmd" - This R Markdown document analyzes results and produces plots for all continuous SWMM simulations. This was used to produce many plots in the supplemental material. Commented sections can also be used to reproduce figures from the main body of the manuscript.
+
+"City Design Storm Plots.Rmd" - This R Markdown document analyzes results and produces plots for all design storm SWMM simulations. This code was used to produce supplmental figures and some figures from the main body of the manuscript.
+
+
+These input data and code should be sufficient to replicate the modeling analysis presented in Lammers et al. We do not include all model files and results here because of the sheer size and number of these files. Please direct any questions or concerns to Rod Lammers (rodlammers@gmail.com).
