@@ -10,8 +10,8 @@ header-includes:
   \renewcommand{\thefigure}{S\arabic{figure}}
   \usepackage{float}
   \floatplacement{figure}{H}
-  \setcounter{page}{8}
-  \setcounter{figure}{4}
+  \setcounter{page}{10}
+  \setcounter{figure}{6}
 ---
 
 ```{r setup, include=FALSE}
@@ -53,7 +53,7 @@ storm_vals <- list()
 
 for (i in 1:length(cities)){
   #Get IDF Curve for city
-  IDF <- read.csv(paste0("~/WORK/SWMM_Rain_Gardens/City_Analysis/", cities[i], "_IDF.csv"))
+  IDF <- read.csv(paste0("../Data/", cities[i], "_IDF.csv"))
   
   rains <- filter(IDF, Hour == 24) %>%
     select(-Hour)
@@ -146,7 +146,7 @@ fix_report <- function(y){
   return(y)
 }
 
-subcatchment_results <- function(ratio, rain, soil, city, dir_name = "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis"){
+subcatchment_results <- function(ratio, rain, soil, city, dir_name ){
   filenm <- paste0(dir_name, "/", city, "/", "Design_Storms/", city, "_", soil, "_Rainfall_", rain, "_", ratio * 100, ".rpt")
   
   rpt <- read_rpt(filenm)
@@ -176,7 +176,6 @@ subcatchment_results <- function(ratio, rain, soil, city, dir_name = "C:/Users/r
 
 
 ```{r, echo=FALSE, fig.height = 6, fig.cap="Simulated hydrographs at the watershed outlet for the baseline and GSI scenarios for the 1-month (a), 6-month (b), 2-year (c), 10-yr (d), 50-yr (e), and 100-yr (f) storm events.", warning=FALSE, message=FALSE, fig.align="center"}
-source("~/WORK/SWMM_Rain_Gardens/Run SWMM Function.R")
 
 #Plot all hydrographs - also summarize by city
 library(swmmr)
@@ -184,6 +183,7 @@ rains <- c("1_month", "6_month", "2yr", "10yr", "50yr", "100yr")
 soils <- c("low", "med", "high")
 ratio <- c(0, 0.01, 0.05, 0.1, 0.15, 0.2)
 rain_names <- c("1mo", "6mo", "2yr", "10yr", "50yr", "100yr")
+full_path <- "C:/Users/lamme1r/Documents/SWMM_Bioretention"
 
 all_cities_summary <- list()
 all_cities_summary_ds <- list()
@@ -194,7 +194,7 @@ for (i in 1:length(cities)){
   all_cities_summary_ds[[i]] <- list()
   all_cities_subs[[i]] <- list()
   city <- cities[i]
-  dir_name <- paste0("C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis/Design_Storms_NRCS/", city, "/Design_Storms")
+  dir_name <- paste0(full_path, "/Sims/Design_Storms/", city)
   
   results <- list()
   report <- list()
@@ -248,7 +248,7 @@ for (i in 1:length(cities)){
       title(main = paste0(rain_names[k], " (", round(storm_vals[[i]][k] * 2.54, 1), " cm/", round(storm_vals[[i]][k], 1), " in)"))
       add_label(-0.08, -0.05, paste0("(", letters[k], ")"))
     }
-    mtext(paste(stringr::str_replace(cities[[i]], "_", " "), "-", Hmisc::capitalize(soils[j]), "Infiltration"),
+    mtext(paste(stringr::str_replace(cities[[i]], "_", " "), "-", tools::toTitleCase(soils[j]), "Infiltration"),
           side = 3, 
           outer = TRUE, line = 0.5, font = 2)
     colors <- RColorBrewer::brewer.pal(n = 6, "Greens")
@@ -329,7 +329,7 @@ for (i in 1:length(cities)){
     }
     add_label(-0.05, -0.05, paste0("(", letters[j], ")"))
     
-    mtext(paste(Hmisc::capitalize(soils[j]), "Infiltration"), side = 3, line = 1.7, font = 2, cex = 0.9)
+    mtext(paste(tools::toTitleCase(soils[j]), "Infiltration"), side = 3, line = 1.7, font = 2, cex = 0.9)
     axis(side = 1, at = 1:6, labels = rain_names, gap.axis = 0.5)
     treat <- unique(summary_all$treatment)
     for(k in 1:length(treat)){
@@ -358,20 +358,6 @@ for (i in 1:length(cities)){
       lines(peak_red ~ as.numeric(treatment), sub, col = colors2_storm[k])
     }
     abline(h = 0)
-    
-    
-    # plot(time_diff ~ as.numeric(Event), all_cities_summary[[i]][[j]], type = "p", pch = 21, bg = colors2, cex = 1.3,
-    #      las = 1, ylab = "", xlab = "", xaxt = "n", main = "Peak Timing",
-    #      ylim = ylim_timing)
-    # if (j == 1){
-    #   mtext("Peak Flow Delay [min]", side = 2, line = 2.5, cex = 0.7)
-    # }
-    # axis(side = 1, at = 1:6, labels = rains)
-    # for(k in 1:length(treat)){
-    #   sub <- filter(all_cities_summary[[i]][[j]], treatment == treat[k])
-    #   lines(time_diff ~ as.numeric(Event), sub, col = colors2[k])
-    # }
-    # abline(h = 0)
     
     plot(vol_red ~ as.numeric(Event), all_cities_summary[[i]][[j]], type = "p", pch = 21, 
          bg = colors2_ratio, cex = 1.3,

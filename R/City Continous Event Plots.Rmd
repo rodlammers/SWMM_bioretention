@@ -11,8 +11,8 @@ header-includes:
   \renewcommand{\thefigure}{S\arabic{figure}}
   \usepackage{float}
   \floatplacement{figure}{H}
-  \setcounter{page}{44}
-  \setcounter{figure}{40}
+  \setcounter{page}{46}
+  \setcounter{figure}{42}
   \pretolerance=10000
 ---
 
@@ -32,7 +32,7 @@ suppressPackageStartupMessages(library(tidyr))
 library(swmmr)
 
 source("~/WORK/R Functions/Plot Functions.R")
-source("~/WORK/SWMM_Rain_Gardens/City_Analysis/Storm event analysis.R")
+source("Storm event analysis.R")
 
 #Cities
 cities <- c("New_Orleans",
@@ -104,7 +104,7 @@ fix_report <- function(y){
 }
 
 runoff_summary <- function(city, rain, soil, ratio, 
-                        dir_name = "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis"){
+                        dir_name = "../Sims/Continuous"){
   
   #Get output
   rpt_file <- paste0(dir_name, "/", city, "/", city, "_", soil, "_", rain, "_", ratio * 100, ".rpt")
@@ -141,7 +141,7 @@ runoff_summary <- function(city, rain, soil, ratio,
 }
 
 peak_events <- function(city, rain, soil, ratio, hourly_data, threshold, location = "Outfall", subcatchments = FALSE,
-                        dir_name = "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis"){
+                        dir_name = "../Sims/Continuous"){
   
   #Do event analysis
   index <- which(names(hourly_data) == gsub("_", " ", city))
@@ -226,7 +226,7 @@ peak_events <- function(city, rain, soil, ratio, hourly_data, threshold, locatio
 }
 
 snow_stats <- function(city, rain, 
-                        dir_name = "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis"){
+                        dir_name = "../Sims/Continuous"){
   
   #Get files
   out_file <- paste0(dir_name, "/", city, "/", city, "_high_", rain, "_baseline.out")
@@ -248,7 +248,7 @@ snow_stats <- function(city, rain,
 
 ```{r echo=FALSE, fig.height=7.5, fig.width=5.5, fig.cap=paste0("Peak flow reduction (a) and runoff volume reduction (b) by event, high pulse count (c), high pulse duation (d), surface runoff volume reduction (e), and flow flashiness (RBI calculated using 15-min flow data; f) for ", cities2, ". Plots (a) and (b) show only results for high infiltration soils to improve readability."), warning=FALSE, message=FALSE, fig.align="center"}
 rains <- c("Dry", "Norm", "Wet")
-dir <- "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis"
+dir <- "C:/Users/lamme1r/Documents/SWMM_bioretention/Sims/Continuous"
 soils <- c("low", "med", "high")
 comb_results <- list()
 snow_all <- list()
@@ -525,7 +525,7 @@ for (k in 1:length(cities)){
 
 ```{r echo = FALSE}
 
-GI_event_analysis <- function(city, rain, soil, ratio, hourly_data, dir_name = "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis"){
+GI_event_analysis <- function(city, rain, soil, ratio, hourly_data, dir_name = "C:/Users/lamme1r/Documents/SWMM_bioretention/Sims/Continuous"){
 
   #Check if .csv file with results already exists, if it does then just read it in, otherwise, create it
   output_file  <- paste0(dir_name, "/", city, "/", city, "_", soil, "_", rain, "_", ratio * 100, "_LID.csv")
@@ -608,7 +608,7 @@ Plots of outflow from of bioretention areas for each city for each of the three 
 rains <- c("Wet", "Norm", "Dry")
 soils <- c("high", "med", "low")
 ratios <- 0.1
-dir = "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis"
+dir = "C:/Users/lamme1r/Documents/SWMM_bioretention/Sims/Continuous"
 
 results_all <- list()
 int_season_all <- list()
@@ -783,15 +783,15 @@ for (i in 1:length(cities)){
 <!--                                         "Columbus", "Elko", "Los_Angeles", "Colorado_Springs"))) %>% -->
 <!--   left_join(precip_metrics_df, by = c("city", "rain")) -->
 
-<!-- int_season_df <- do.call("rbind", int_season_all) %>% -->
-<!--     mutate(city = factor(city, levels = c("New_Orleans", "Atlanta", "Seattle", "Des_Moines", "Tampa", -->
-<!--                                         "Columbus", "Elko", "Los_Angeles", "Colorado_Springs"))) -->
+<!-- # int_season_df <- do.call("rbind", int_season_all) %>% -->
+<!-- #     mutate(city = factor(city, levels = c("New_Orleans", "Atlanta", "Seattle", "Des_Moines", "Tampa", -->
+<!-- #                                         "Columbus", "Elko", "Los_Angeles", "Colorado_Springs"))) -->
+<!-- #  -->
+<!-- # sat_season_df <- do.call("rbind", sat_season_all) %>% -->
+<!-- #     mutate(city = factor(city, levels = c("New_Orleans", "Atlanta", "Seattle", "Des_Moines", "Tampa", -->
+<!-- #                                         "Columbus", "Elko", "Los_Angeles", "Colorado_Springs"))) -->
 
-<!-- sat_season_df <- do.call("rbind", sat_season_all) %>% -->
-<!--     mutate(city = factor(city, levels = c("New_Orleans", "Atlanta", "Seattle", "Des_Moines", "Tampa", -->
-<!--                                         "Columbus", "Elko", "Los_Angeles", "Colorado_Springs"))) -->
-
-<!-- write.csv(do.call("rbind", results_all), "~/WORK/SWMM_Rain_Gardens/City_analysis/City_GI_results.csv", row.names = FALSE) -->
+<!-- write.csv(results_all_df, "../Results/City_GI_results.csv", row.names = FALSE) -->
 
 <!-- colors <- RColorBrewer::brewer.pal(8, "Set1") -->
 <!-- colors <- R.utils::insert(colors, ats = c(3, 4), values = adjustcolor(colors[c(2, 3)], alpha.f = 0.6)) -->
@@ -804,8 +804,8 @@ for (i in 1:length(cities)){
 <!-- par(mfcol = c(3, 3), mar = c(4.5, 2, 1.5, 1.5), oma = c(3, 1, 2, 1.7), mgp = c(2, 0.5, 0)) -->
 <!-- for (i in 1:length(soils)){ -->
 <!--   subset <- filter(results_all_df, soil == soils[i]) -->
-<!--   sub_int <- filter(int_season_df, soil == soils[i]) -->
-<!--   sub_sat <- filter(sat_season_df, soil == soils[i]) -->
+<!--   # sub_int <- filter(int_season_df, soil == soils[i]) -->
+<!--   # sub_sat <- filter(sat_season_df, soil == soils[i]) -->
 
 <!--   # plot(I(tot_runoff / tot_inflow * 100) ~ I(int_mean * 2.54), subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "", -->
 <!--   #      ylim = c(0, 100), cex = 1.5, -->

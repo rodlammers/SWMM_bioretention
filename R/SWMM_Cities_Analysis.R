@@ -21,14 +21,6 @@ plot_results <- function(results, ymax = NULL){
   zoo::plot.zoo(results[[1]][[1]], ylab = "Q [cfs]", las = 1, xlab = "Time", lwd = 2, ylim = c(0, ymax))
   grid()
   
-  # colors <- RColorBrewer::brewer.pal(n = length(results), "Greens")
-  # 
-  # for (i in 2:length(results)){
-  #   lines(zoo::as.zoo(results[[i]]$Outfall$total_inflow), col = colors[i], lwd = 2)
-  # }
-  # 
-  # legend("topright", legend = c("1%", "5%", "10%", "15%", "20%"), col = colors[2:length(colors)], lwd = 2)
-  
 }
 
 #Caculate summary stats from hydrographs
@@ -52,7 +44,7 @@ calc_stats <- function(results, soils, rains, ratio, threshold){
 
 #Water Balance
 water_balance <- function(city, soil, rain, ratio){
-  filenm <- paste0("C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis/", city, "/", city, "_", soil, "_", rain, "_", ratio, ".rpt")
+  filenm <- paste0("Sims/Continuous/", city, "/", city, "_", soil, "_", rain, "_", ratio, ".rpt")
   report <- read_rpt(filenm)
   data <- report$runoff_quantity_continuity$Depth
   names(data) <- report$runoff_quantity_continuity$Component
@@ -76,7 +68,7 @@ water_balance <- function(city, soil, rain, ratio){
 
 
 
-subcatchment_results_continuous <- function(ratio, rain, soil, city, dir_name = "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis"){
+subcatchment_results_continuous <- function(ratio, rain, soil, city, dir_name){
   filenm <- paste0(dir_name, "/", city, "/", city, "_", soil, "_", rain, "_", ratio * 100, ".rpt")
   
   rpt <- read_rpt(filenm)
@@ -103,7 +95,7 @@ subcatchment_results_continuous <- function(ratio, rain, soil, city, dir_name = 
 }
 
 peak_events <- function(city, rain, soil, ratio, hourly_data, threshold, location = "Outfall", 
-                        dir_name = "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis"){
+                        dir_name){
   
   #Do event analysis
   index <- which(names(hourly_data) == gsub("_", " ", city))
@@ -191,8 +183,8 @@ clean_LID_reports <- function(ratio, city, rain, soil, dir_name){
 }
 
 #Run SWMM
-source("~/WORK/SWMM_Rain_Gardens/Run SWMM Function.R")
-dir <- "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis"
+source("R/Run SWMM Function.R")
+dir <- "C:/Users/lamme1r/Documents/SWMM_bioretention/Sims/City_Analysis"
 city <- "Seattle"
 rains <- c("Dry", "Norm", "Wet")
 soils <- c("low", "med", "high")
@@ -273,7 +265,7 @@ percentages <- stats_combined %>%
             HPC = HPC,
             HPD = HPD)
 
-source("~/WORK/SWMM_Rain_Gardens/City_Analysis/Storm event analysis.R")
+source("R/Storm event analysis.R")
 events_peak <- list()
 for (i in 1:length(rains)){
   events_peak[[i]] <- list()
@@ -289,7 +281,7 @@ events_peak_comb <- do.call("rbind", do.call("rbind", events_peak)) %>%
 
 
 source("~/WORK/R Functions/Plot Functions.R")
-png(paste0("~/WORK/SWMM_Rain_Gardens/City_Analysis/", city, "/", city, "_Summary_Plot_basin.png"), type = "cairo", units = "in",
+png(paste0("Sims/City_Analysis/", city, "/", city, "_Summary_Plot_basin.png"), type = "cairo", units = "in",
     height = 5, width = 5, res = 500)
 colors <- RColorBrewer::brewer.pal(n = 3, "PuBu")
 colors <- c("gray20", rev(colors))
@@ -309,8 +301,8 @@ dev.off()
 
 
 
-source("~/WORK/SWMM_Rain_Gardens/City_Analysis/Storm event analysis.R")
-GI_event_analysis <- function(city, rain, soil, ratio, hourly_data, dir_name = "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis"){
+source("R/Storm event analysis.R")
+GI_event_analysis <- function(city, rain, soil, ratio, hourly_data, dir_name = "C:/Users/lamme1r/SWMM_bioretention/Sims/City_Analysis"){
   
   #Check if .csv file with results already exists, if it does then just read it in, otherwise, create it
   output_file  <- paste0(dir_name, "/", city, "/", city, "_", soil, "_", rain, "_", ratio * 100, "_LID.csv")
@@ -450,7 +442,7 @@ for (j in 1:length(rains)){
 results_df <- do.call("rbind", do.call("rbind", do.call("rbind", results_summary)))
 
 #Plot of intensity and saturation
-png(paste0("~/WORK/SWMM_Rain_Gardens/City_Analysis/", city, "/", city, "_GI_Summary.png"), type = "cairo", units = "in",
+png(paste0("Sims/City_Analysis/", city, "/", city, "_GI_Summary.png"), type = "cairo", units = "in",
     height = 5, width = 5, res = 500)
 colors <- rev(RColorBrewer::brewer.pal(n = 3, "PuBu"))
 par(mfcol = c(2, 2), mar = c(3, 4, 1, 0.5), oma = c(1, 0, 3, 0))
@@ -488,7 +480,7 @@ wb_combined <- do.call("rbind", wb) %>%
   mutate(soil = factor(soil, levels = c("baseline", "high", "med", "low")))
 wb_combined[is.na(wb_combined)] <- 0
 
-png(paste0("~/WORK/SWMM_Rain_Gardens/City_Analysis/", city, "/", city, "_Water_Balance.png"), type = "cairo", units = "in",
+png(paste0("Sims/City_Analysis/", city, "/", city, "_Water_Balance.png"), type = "cairo", units = "in",
     height = 4, width = 6.5, res = 500)
 colors <- RColorBrewer::brewer.pal(5, "Paired")[c(1:2, 5, 3:4)]
 par(mfrow = c(1, 3), mar = c(2, 3, 2, 0.5), oma = c(3, 1.5, 1.5, 0))
@@ -508,107 +500,375 @@ legend("bottomleft", legend = c("Runoff", "GW Flow", "LID Drain", "Infilt.", "Ev
 #f.horlegend(pos = "bottomleft", legend = c("Runoff", "GW Flow", "Infil", "Evap", "LID Drain"))
 dev.off()
 #######################################################################
+#SUMMARY PLOTS
+
+# comb_results2 <- do.call("rbind", comb_results) %>%
+#   mutate(city = factor(city, levels = c("New_Orleans", "Atlanta", "Seattle", "Des_Moines", "Tampa",
+#                                         "Columbus", "Elko", "Los_Angeles", "Colorado_Springs")))
+# 
+# write.csv(comb_results2, "~/WORK/SWMM_Rain_Gardens/City_Analysis/City_comb_results_basin.csv", row.names = FALSE)
+comb_results2 <- read.csv("Results/City_comb_results_basin.csv") %>%
+  mutate(city = factor(city, levels = c("New_Orleans", "Atlanta", "Seattle", "Des_Moines", "Tampa",
+                                        "Columbus", "Elko", "Los_Angeles", "Colorado_Springs")))
+soils <- c("low", "med", "high")
+
+colors <- RColorBrewer::brewer.pal(8, "Set1")
+colors <- R.utils::insert(colors, ats = c(3, 4), values = adjustcolor(colors[c(2, 3)], alpha.f = 0.6))
+colors <- colors[-8]
+colors <- adjustcolor(colors, alpha.f = 0.8)
+palette(colors)
+# png("Results/Cities_Continuous_Summary_basin.png", type = "cairo", units = "in",
+#     height = 8.5, width = 6.5, res = 500)
+pdf("Results/Figure_5.pdf", height = 8.5, width = 6.5, pointsize = 12)
+par(mfcol = c(3, 3), mar = c(4, 3, 1, 0.5), oma = c(5, 1, 2, 1.5), mgp = c(2, 0.8, 0))
+for (i in 1:length(soils)){
+  subset <- filter(comb_results2, soil == soils[i])
+  
+  plot(HPC_red ~ I(precip * 2.54), subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+       ylim = c(0, 85),
+       cex = 1.5,
+       main = "HPC", xlim = c(0, 203.2), mgp = c(2, 0.5, 0))
+  axis(side = 1, at = seq(0, 80, 20) * 2.54, labels = seq(0, 80, 20), line = 1.7, mgp = c(2, 0.5, 0))
+  add_label(-0.05, -0.05, paste0("(", letters[i], ")"))
+  add_label(0.98, 1.19, "[in]")
+  add_label(0.98, 1.07, "[cm]")
+  if (i == 1){
+    mtext("High Pulse Count % Red.", side = 2, line = 2.7, cex = 0.8)
+    mtext("Low Infiltration", side = 3, line = 1.2, font = 2)
+  }else if (i == 2){
+    mtext("Med Infiltration", side = 3, line = 1.2, font = 2)
+  }else {
+    mtext("High Infiltration", side = 3, line = 1.2, font = 2)
+  }
+  
+  plot(HPD_red ~ I(precip * 2.54), subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+       ylim = range(comb_results2$HPD_red), cex = 1.5,
+       main = "HPD", xlim = c(0, 203.2), mgp = c(2, 0.5, 0))
+  axis(side = 1, at = seq(0, 80, 20) * 2.54, labels = seq(0, 80, 20), line = 1.7, mgp = c(2, 0.5, 0))
+  add_label(0.98, 1.19, "[in]")
+  add_label(0.98, 1.07, "[cm]")
+  add_label(-0.05, -0.05, paste0("(", letters[i + 3], ")"))
+  abline(h = 0, lwd = 2)
+  if (i == 1){
+    mtext("High Pulse Duration % Red.", side = 2, line = 2.7, cex = 0.8)
+  }
+  
+  plot(vol_red ~ I(precip * 2.54), subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+       ylim = c(0,85), cex = 1.5,
+       main = "Surface Runoff", xlim = c(0, 203.2), mgp = c(2, 0.5, 0))
+  axis(side = 1, at = seq(0, 80, 20) * 2.54, labels = seq(0, 80, 20), line = 1.7, mgp = c(2, 0.5, 0))
+  add_label(0.98, 1.19, "[in]")
+  add_label(0.98, 1.07, "[cm]")
+  add_label(-0.05, -0.05, paste0("(", letters[i + 6], ")"))
+  if (i == 1){
+    mtext("Surface Runoff % Red.", side = 2, line = 2.7, cex = 0.8)
+  }
+  
+}
+
+mtext("Total Annual Precipitation", side = 1, outer = TRUE, line = -0.2)
+legend("bottomleft", legend = c("New Orleans", "Atlanta", "Seattle", "Des Moines", "Tampa", "Columbus", "Elko", "Los Angeles", "Colorado Springs"),
+       pch = 21, pt.bg = colors, bty = "n", ncol = 3, inset = c(-1.8, -0.65), xpd = NA, pt.cex = 1.5)
+dev.off()
+
+#Plot of sub-basin vs. watershed results for continuous sims
+# event_results_df <- do.call("rbind", event_results_all) %>%
+#   mutate(city = factor(city, levels = c("New_Orleans", "Atlanta", "Seattle", "Des_Moines", "Tampa",
+#                                         "Columbus", "Elko", "Los_Angeles", "Colorado_Springs")))
+#
+# write.csv(event_results_df, "~/WORK/SWMM_Rain_Gardens/City_Analysis/City_event_results_basin.csv", row.names = FALSE)
+event_results_df <- read.csv("Results/City_event_results_basin.csv") %>%
+  mutate(city = factor(city, levels = c("New_Orleans", "Atlanta", "Seattle", "Des_Moines", "Tampa",
+                                        "Columbus", "Elko", "Los_Angeles", "Colorado_Springs")))
+
 
 source("~/WORK/R Functions/Plot Functions.R")
-test <- GI_event_analysis(city = "Atlanta", rain = "Norm", soil = "med", ratio = 0.1, hourly_data = hourly_data)
-#test$exceed_infil <- test$max_inflow_rate > 4.74
 
-colors <- cRamp((test$storage_initial + test$soil_moist_initial) / 2, "viridis", alpha = 0.7)
-#colors <- cRamp(test$event, "viridis", alpha = 0.7)
-plot(outflow ~ inflow, test, pch = 16, col = colors)
+high_data <- filter(event_results_df, soil == "high")
+city_nms <- c("New\nOrleans", "Atlanta", "Seattle", "Des\nMoines", "Tampa", "Columbus", "Elko", "Los\nAngeles", "Colorado\nSprings")
+n_events <- group_by(high_data, city) %>%
+  summarize(n_events = n(),
+            .groups = "keep")
 
-plot(outflow ~ storage_initial, test, pch = 16)
-plot(outflow ~ soil_moist_initial, test, pch =16)
+#png("Results/Continous_SubvWatershed_basin.png", type = "cairo", units = "in", width = 6.5, height = 5, res = 500)
+pdf("Results/Figure_7.pdf", height = 5, width = 6.5, pointsize = 12)
+par(mfrow = c(2, 1), mar = c(3, 4.5, 1.5, 0.5), mgp = c(2.3, 0.7, 0))
+rodplot(I(sub_peak - peak_red) ~ city, high_data, col = colors, las = 1, main = "Peak Flow", ylab = "Subbasins - Watershed\nPeak % Reduction",
+        xlab = "", xaxt = "n", ylim = c(-175, 175))
+abline(h = 0, lwd = 2)
+axis(side = 1, at = 1:9, labels = city_nms, cex.axis = 0.8, padj = 1, mgp = c(2, -0.1, 0), gap.axis = 0.1)
+text("Watershed Effects > Subbasins", x = 10, y = -165, pos = 2, cex = 0.8)
+text("Subasin Effects > Watershed", x = 10, y = 165, pos = 2, cex = 0.8)
+add_label(-0.02, -0.05, "(a)")
 
-par(mfrow = c(2, 1))
-plot(runoff ~ inflow, test, pch = 16)
-plot(drain_outflow ~ inflow, test, pch = 16)
+rodplot(I(sub_vol - vol_red) ~ city, high_data, col = colors, las = 1, main = "Runoff Volume", ylab = "Subbasins - Watershed\nVolume % Reduction",
+        xlab = "", xaxt = "n", ylim = c(-175, 175))
+abline(h = 0, lwd = 2)
+axis(side = 1, at = 1:9, labels = city_nms, cex.axis = 0.8, padj = 1, mgp = c(2, -0.1, 0), gap.axis = 0.1)
+axis(side = 1, at = 1:9, labels = n_events$n_events, tick = FALSE, line = 1.4, cex.axis = 0.8)
+text("# storms =", x = -1, y = -315, pos = 4, cex = 0.8, xpd = NA)
+text("Watershed Effects > Subbasins", x = 10, y = -165, pos = 2, cex = 0.8)
+text("Subasin Effects > Watershed", x = 10, y = 165, pos = 2, cex = 0.8)
+add_label(-0.02, -0.05, "(b)")
+dev.off()
 
-#Get sub-basin areas
-bioret <- read_inp(file.path(dir, "Atlanta", "Atlanta_high_Norm_10.inp"))$lid_usage %>%
-  filter(`LID Process` == "BioRet1")
-subbasins <- read_inp(file.path(dir, "Atlanta", "Atlanta_high_Norm_10.inp"))$subcatchments
+#GI Plot
+#Get precip
+precip_metrics <- list()
+for (i in 1:length(cities)){
+  precip_metrics[[i]] <- list()
+  city <- cities[i]
+  index <- which(names(hourly_data) == gsub("_", " ", city))
+  events <- event_separation(data = hourly_data[[index]], city = city)
+  
+  #Get events for year of analysis
+  event_summary <- events[[1]]
+  years <- unique(event_summary$year)
+  
+  for (j in 1:length(rains)){
+    rain <- rains[j]
+    analysis_year <- case_when(rain == "Dry" ~ years[1],
+                               rain == "Norm" ~ years[2],
+                               rain == "Wet" ~ years[3])
+    
+    event_summary2 <- filter(event_summary, year == analysis_year)
+    events_data <- filter(events[[2]], year == analysis_year)
+    
+    precip_metrics[[i]][[j]] <- data.frame(delta_mean = mean(event_summary2$delta, na.rm = TRUE),
+                                           delta_med = median(event_summary2$delta, na.rm = TRUE),
+                                           dur_mean = mean(event_summary2$dur, na.rm = TRUE),
+                                           dur_med = median(event_summary2$dur, na.rm = TRUE),
+                                           int_mean = mean(events_data$value, na.rm = TRUE),
+                                           int_med = median(events_data$value, na.rm = TRUE),
+                                           tot_precip = sum(event_summary2$vol, na.rm = TRUE),
+                                           rain = rain,
+                                           city = city)
+  }
+}
 
-by_event <- left_join(test, bioret, by = c("sub" = "Subcatchment")) %>%
-  group_by(event) %>%
-  summarize(tot_outflow = sum(outflow / 12 * Area), #total outflow in ft^3
-            sat_outflow = sum(outflow[soil_moist_initial >= 0.9] / 12 * Area[soil_moist_initial >= 0.9]), #total outflow where initial soil moisture is high
-            int_outflow = sum(outflow[soil_moist_initial < 0.9] / 12 * Area[soil_moist_initial < 0.9]), #total outflow where initial soil moisture is lower
-            tot_inflow = sum(inflow / 12 * Area), #total inflow in ft^3
-            p_depth = mean(vol), #storm depth in inches
-            storm_delta = mean(delta) #time (hours) since previous rainfall event
-  )
+precip_metrics_df <- do.call("rbind", do.call("rbind", precip_metrics))
 
-colors <- cRamp(by_event$max_inflow_rate, "viridis", alpha = 0.7)
-plot(tot_outflow ~ storm_delta, by_event, pch = 16)
+results_all_df <- do.call("rbind", results_all) %>%
+  mutate(city = factor(city, levels = c("New_Orleans", "Atlanta", "Seattle", "Des_Moines", "Tampa",
+                                        "Columbus", "Elko", "Los_Angeles", "Colorado_Springs"))) %>%
+  left_join(precip_metrics_df, by = c("city", "rain"))
 
-by_sub <- group_by(test, sub) %>%
-  summarize_all(mean)
+int_season_df <- do.call("rbind", int_season_all) %>%
+  mutate(city = factor(city, levels = c("New_Orleans", "Atlanta", "Seattle", "Des_Moines", "Tampa",
+                                        "Columbus", "Elko", "Los_Angeles", "Colorado_Springs")))
 
-sub_infil_exceed <- group_by(test, sub) %>%
-  summarize(max_inflow_dur = sum(max_inflow_dur))
+sat_season_df <- do.call("rbind", sat_season_all) %>%
+  mutate(city = factor(city, levels = c("New_Orleans", "Atlanta", "Seattle", "Des_Moines", "Tampa",
+                                        "Columbus", "Elko", "Los_Angeles", "Colorado_Springs")))
 
-plot(outflow ~ soil_moist_initial, test)
+write.csv(do.call("rbind", results_all), "~/WORK/SWMM_Rain_Gardens/City_analysis/City_GI_results.csv", row.names = FALSE)
 
-#summarize by subbasin
-library(sf)
-subs <- st_read("~/WORK/SWMM_Rain_Gardens/SHC_Subcatchments.shp.shp")
 
-by_sub <- group_by(test, sub) %>%
-  summarize(tot_inflow = sum(inflow),
-            tot_outflow = sum(outflow),
-            perc_outflow = tot_outflow / tot_inflow,
-            perc_evap = sum(evap) / tot_inflow,
-            perc_exfil = sum(exfil) / tot_inflow)
 
-subs <- left_join(subs, by_sub, by = c("i" = "sub"))
+colors <- RColorBrewer::brewer.pal(8, "Set1")
+colors <- R.utils::insert(colors, ats = c(3, 4), values = adjustcolor(colors[c(2, 3)], alpha.f = 0.6))
+colors <- colors[-8]
+colors <- adjustcolor(colors, alpha.f = 0.8)
+palette(colors)
+soils <- c("low", "med", "high")
+png("~/WORK/SWMM_Rain_Gardens/City_Analysis/Cities_GI_Summary2.png", type = "cairo", units = "in",
+    height = 8.5, width = 6.5, res = 500)
+par(mfcol = c(3, 3), mar = c(4.5, 2, 1.5, 1.5), oma = c(3, 1, 2, 1.7), mgp = c(2, 0.5, 0))
+for (i in 1:length(soils)){
+  subset <- filter(results_all_df, soil == soils[i])
+  sub_int <- filter(int_season_df, soil == soils[i])
+  sub_sat <- filter(sat_season_df, soil == soils[i])
+  
+  # plot(I(tot_runoff / tot_inflow * 100) ~ I(int_mean * 2.54), subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+  #      ylim = c(0, 100), cex = 1.5,
+  #      main = "Fraction Outflow")
+  plot(I(tot_runoff / tot_inflow * 100) ~ I(int_mean * 2.54), subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+       ylim = c(0, 100), cex = 1.5,
+       main = "Total Outflow")
+  axis(side = 1, at = seq(0.04, 0.16, 0.02) * 2.54, labels = seq(0.04, 0.16, 0.02), line = 1.7, mgp = c(2, 0.5, 0))
+  add_label(1.01, 1.19, "[in/hr]")
+  add_label(1.01, 1.07, "[cm/hr]")
+  
+  add_label(-0.05, -0.05, paste0("(", letters[i], ")"))
+  if (i == 1){
+    mtext("Total Outflow / Inflow [%]", side = 2, line = 1.8, cex = 0.8)
+    mtext("Low Infiltration", side = 3, line = 1.5, font = 2)
+  }else if (i == 2){
+    mtext("Med Infiltration", side = 3, line = 1.5, font = 2)
+    mtext("Mean Precip Intensity", side = 1, line = 3.3, cex = 0.8)
+  }else {
+    mtext("High Infiltration", side = 3, line = 1.5, font = 2)
+  }
+  
+  # plot(I(frac_high_intensity * 100) ~ I(int_mean * 2.54), subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+  #      ylim = c(0, 100), cex = 1.5,
+  #      main = "High Intensity")
+  plot(I(high_intensity_runoff / tot_inflow * 100) ~ I(int_mean * 2.54), subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+       ylim = c(0, 100), cex = 1.5,
+       main = "High Intensity")
+  axis(side = 1, at = seq(0.04, 0.16, 0.02) * 2.54, labels = seq(0.04, 0.16, 0.02), line = 1.7, mgp = c(2, 0.5, 0))
+  add_label(1.01, 1.19, "[in/hr]")
+  add_label(1.01, 1.07, "[cm/hr]")
+  
+  add_label(-0.05, -0.05, paste0("(", letters[i + 3], ")"))
+  if (i == 1){
+    mtext("High Intensity Outflow / Inflow [%]", side = 2, line = 1.8, cex = 0.8)
+    #mtext("Low Infiltration", side = 3, line = 1.5, font = 2)
+  }else if (i == 2){
+    # mtext("Med Infiltration", side = 3, line = 1.5, font = 2)
+    mtext("Mean Precip Intensity", side = 1, line = 3.3, cex = 0.8)
+  }else {
+    #mtext("High Infiltration", side = 3, line = 1.5, font = 2)
+  }
+  
+  
+  # plot(I(frac_sat * 100) ~ delta_mean, subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+  #      ylim = c(0, 100), cex = 1.5,
+  #      main = "Back-to-Back", xaxt= "n")
+  plot(I(sat_outflow_ft3 / 95.5 / tot_inflow * 100) ~ delta_mean, subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+       ylim = c(0, 100), cex = 1.5,
+       main = "Back-to-Back")
+  axis(side = 1, gap.axis = 0.5)
+  add_label(-0.05, -0.05, paste0("(", letters[i + 6], ")"))
+  if (i == 1){
+    mtext("Back-to-Back Outflow / Inflow [%]", side = 2, line = 1.8, cex = 0.8)
+  }else if (i ==2){
+    mtext("Mean Time Between Events [hr]", side = 1, line = 2, cex = 0.8)
+  }
+  
+  
+}
 
-plot(subs["perc_exfil"])
+legend("bottomleft", legend = c("New Orleans", "Atlanta", "Seattle", "Des Moines", "Tampa", "Columbus", "Elko", "Los Angeles", "Colorado Springs"),
+       pch = 21, pt.bg = colors, bty = "n", ncol = 3, inset = c(-1.8, -0.5), xpd = NA, pt.cex = 1.5)
+dev.off()
 
-plot(subs)
-######################################
-file <- "~/WORK/SWMM_Rain_Gardens/City_Analysis/Atlanta/Atlanta_med_Norm_10_LID.rds"
-data <- readRDS(file)
+#GI Plot
+#Get precip
+precip_metrics <- list()
+for (i in 1:length(cities)){
+  precip_metrics[[i]] <- list()
+  city <- cities[i]
+  index <- which(names(hourly_data) == gsub("_", " ", city))
+  events <- event_separation(data = hourly_data[[index]], city = city)
+  
+  #Get events for year of analysis
+  event_summary <- events[[1]]
+  years <- unique(event_summary$year)
+  
+  for (j in 1:length(rains)){
+    rain <- rains[j]
+    analysis_year <- case_when(rain == "Dry" ~ years[1],
+                               rain == "Norm" ~ years[2],
+                               rain == "Wet" ~ years[3])
+    
+    event_summary2 <- filter(event_summary, year == analysis_year)
+    events_data <- filter(events[[2]], year == analysis_year)
+    
+    precip_metrics[[i]][[j]] <- data.frame(delta_mean = mean(event_summary2$delta, na.rm = TRUE),
+                                           delta_med = median(event_summary2$delta, na.rm = TRUE),
+                                           dur_mean = mean(event_summary2$dur, na.rm = TRUE),
+                                           dur_med = median(event_summary2$dur, na.rm = TRUE),
+                                           int_mean = mean(events_data$value, na.rm = TRUE),
+                                           int_med = median(events_data$value, na.rm = TRUE),
+                                           tot_precip = sum(event_summary2$vol, na.rm = TRUE),
+                                           rain = rain,
+                                           city = city)
+  }
+}
 
-GI_data <- data$Sub012
+precip_metrics_df <- do.call("rbind", do.call("rbind", precip_metrics))
 
-test <- GI_data[60000:70000,]
+results_all_df <- do.call("rbind", results_all) %>%
+  mutate(city = factor(city, levels = c("New_Orleans", "Atlanta", "Seattle", "Des_Moines", "Tampa",
+                                        "Columbus", "Elko", "Los_Angeles", "Colorado_Springs"))) %>%
+  left_join(precip_metrics_df, by = c("city", "rain"))
 
-plot(I(Soil_Moisture / 0.463) ~ Date, test, type = "l", ylim = c(0.5, 1))
-abline(h = 0.232/0.463, col = "red")
-lines(I(Storage_Level / 12) ~ Date, test, col = "red")
-lines(I(Surface_Level / 3) ~ Date, test, col = "blue")
+# int_season_df <- do.call("rbind", int_season_all) %>%
+#     mutate(city = factor(city, levels = c("New_Orleans", "Atlanta", "Seattle", "Des_Moines", "Tampa",
+#                                         "Columbus", "Elko", "Los_Angeles", "Colorado_Springs")))
+# 
+# sat_season_df <- do.call("rbind", sat_season_all) %>%
+#     mutate(city = factor(city, levels = c("New_Orleans", "Atlanta", "Seattle", "Des_Moines", "Tampa",
+#                                         "Columbus", "Elko", "Los_Angeles", "Colorado_Springs")))
 
-plot(Total_Inflow ~ Date, GI_data[1:10000,], type = "l")
-#abline(h = 1.18, col = "red")
-#lines(Surface_Runoff ~ Date, GI_data, col = "green")
+write.csv(results_all_df, "Results/City_GI_results.csv", row.names = FALSE)
 
-plot(Soil_Perc ~ Date, GI_data[1:10000, ], type = "l")
+colors <- RColorBrewer::brewer.pal(8, "Set1")
+colors <- R.utils::insert(colors, ats = c(3, 4), values = adjustcolor(colors[c(2, 3)], alpha.f = 0.6))
+colors <- colors[-8]
+colors <- adjustcolor(colors, alpha.f = 0.8)
+palette(colors)
+soils <- c("low", "med", "high")
+# png("Results/Cities_GI_Summary.png", type = "cairo", units = "in",
+#     height = 8.5, width = 6.5, res = 500)
+pdf("Results/Figure_6.pdf", height = 8.5, width = 6.5, pointsize = 12)
+par(mfcol = c(3, 3), mar = c(4.5, 2, 1.5, 1.5), oma = c(3, 1, 2, 1.7), mgp = c(2, 0.5, 0))
+for (i in 1:length(soils)){
+  subset <- filter(results_all_df, soil == soils[i])
+  # sub_int <- filter(int_season_df, soil == soils[i])
+  # sub_sat <- filter(sat_season_df, soil == soils[i])
+  
+  # plot(I(tot_runoff / tot_inflow * 100) ~ I(int_mean * 2.54), subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+  #      ylim = c(0, 100), cex = 1.5,
+  #      main = "Fraction Outflow")
+  plot(I(tot_runoff / tot_inflow * 100) ~ I(int_mean * 2.54), subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+       ylim = c(0, 100), cex = 1.5,
+       main = "Total Outflow")
+  axis(side = 1, at = seq(0.04, 0.16, 0.02) * 2.54, labels = seq(0.04, 0.16, 0.02), line = 1.7, mgp = c(2, 0.5, 0))
+  add_label(1.01, 1.19, "[in/hr]")
+  add_label(1.01, 1.07, "[cm/hr]")
+  
+  add_label(-0.05, -0.05, paste0("(", letters[i], ")"))
+  if (i == 1){
+    mtext("Total Outflow / Inflow [%]", side = 2, line = 1.8, cex = 0.8)
+    mtext("Low Infiltration", side = 3, line = 1.5, font = 2)
+  }else if (i == 2){
+    mtext("Med Infiltration", side = 3, line = 1.5, font = 2)
+    mtext("Mean Precip Intensity", side = 1, line = 3.3, cex = 0.8)
+  }else {
+    mtext("High Infiltration", side = 3, line = 1.5, font = 2)
+  }
+  
+  # plot(I(frac_high_intensity * 100) ~ I(int_mean * 2.54), subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+  #      ylim = c(0, 100), cex = 1.5,
+  #      main = "High Intensity")
+  plot(I(high_intensity_runoff / tot_inflow * 100) ~ I(int_mean * 2.54), subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+       ylim = c(0, 100), cex = 1.5,
+       main = "High Intensity")
+  axis(side = 1, at = seq(0.04, 0.16, 0.02) * 2.54, labels = seq(0.04, 0.16, 0.02), line = 1.7, mgp = c(2, 0.5, 0))
+  add_label(1.01, 1.19, "[in/hr]")
+  add_label(1.01, 1.07, "[cm/hr]")
+  
+  add_label(-0.05, -0.05, paste0("(", letters[i + 3], ")"))
+  if (i == 1){
+    mtext("High Intensity Outflow / Inflow [%]", side = 2, line = 1.8, cex = 0.8)
+    #mtext("Low Infiltration", side = 3, line = 1.5, font = 2)
+  }else if (i == 2){
+    # mtext("Med Infiltration", side = 3, line = 1.5, font = 2)
+    mtext("Mean Precip Intensity", side = 1, line = 3.3, cex = 0.8)
+  }else {
+    #mtext("High Infiltration", side = 3, line = 1.5, font = 2)
+  }
+  
+  
+  # plot(I(frac_sat * 100) ~ delta_mean, subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+  #      ylim = c(0, 100), cex = 1.5,
+  #      main = "Back-to-Back", xaxt= "n")
+  plot(I(sat_outflow_ft3 / 95.5 / tot_inflow * 100) ~ delta_mean, subset, pch = 21, bg = subset$city, las = 1, xlab = "", ylab = "",
+       ylim = c(0, 100), cex = 1.5,
+       main = "Back-to-Back")
+  axis(side = 1, gap.axis = 0.5)
+  add_label(-0.05, -0.05, paste0("(", letters[i + 6], ")"))
+  if (i == 1){
+    mtext("Back-to-Back Outflow / Inflow [%]", side = 2, line = 1.8, cex = 0.8)
+  }else if (i ==2){
+    mtext("Mean Time Between Events [hr]", side = 1, line = 2, cex = 0.8)
+  }
+  
+  
+}
 
-plot(Surface_Infil ~ Date, GI_data, type = "l")
-
-plot(I(Total_Inflow - Surface_Infil) ~ Date, GI_data, type = "l")
-lines(Surface_Runoff ~ Date, GI_data, col = "green")
-lines(Surface_Level ~ Date, GI_data, col = "orange")
-
-plot(Surface_Runoff ~ Date, GI_data[1:20000,], type = "l")
-lines(I(Soil_Moisture / 0.463) ~ Date, GI_data[1:20000, ], col = "red")
-
-plot(Storage_Exfil ~ Date, GI_data, type = "l")
-plot(Soil_Perc ~ Date, GI_data, type = "l")
-plot(Surface_Level ~ Date, GI_data, type = "l")
-
-plot(I(Soil_Moisture / 0.437) ~ Date, GI_data, type = "l")
-plot(Storage_Level ~ Date, GI_data, type = "l")
-plot(Soil_Perc ~ Date, GI_data, type = "l")
-
-storage_ts <- xts::xts(GI_data$Storage_Exfil, order.by = GI_data$Date)
-plot(storage_ts, col = "red", add = TRUE)
-
-#Total runoff reduction %
-(sum(GI_data$Total_Inflow) - sum(GI_data$Surface_Runoff)) / (sum(GI_data$Total_Inflow))
-
-############################################
-#Check outputs
-file <- "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis/Colorado_Springs/Colorado_Springs_high_Dry_10.out"
-output <- read_out(file)
+legend("bottomleft", legend = c("New Orleans", "Atlanta", "Seattle", "Des Moines", "Tampa", "Columbus", "Elko", "Los Angeles", "Colorado Springs"),
+       pch = 21, pt.bg = colors, bty = "n", ncol = 3, inset = c(-1.8, -0.5), xpd = NA, pt.cex = 1.5)
+dev.off()

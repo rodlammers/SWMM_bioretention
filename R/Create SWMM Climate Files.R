@@ -1,6 +1,8 @@
+library(dplyr)
+
 #Create swmm climate inputs
-load(file = "~/WORK/SWMM_Rain_Gardens/PRISM Analysis/Hourly Station Precip.Rdata")
-load("~/WORK/SWMM_Rain_Gardens/PRISM Analysis/Daily station Temp.Rdata")
+load(file = "Data/Hourly Station Precip.Rdata")
+load("Data/Daily station Temp.Rdata")
 
 #Custom SWMM Climate files
 cities <- c("New_Orleans",
@@ -11,13 +13,13 @@ cities <- c("New_Orleans",
             "Elko",
             "Los_Angeles",
             "Columbus",
-            #"Yellowstone",
             "Colorado_Springs")
+
 
 yrs <- c("Dry", "Norm", "Wet")
 for (i in 1:length(daily)){
   for (j in 1:3){
-    filenm <- paste0("~/WORK/SWMM_Rain_Gardens/City_Analysis/", cities[i], "/", cities[i], "_Climate_", yrs[j], ".txt")
+    filenm <- paste0("Sims/Continuous/", cities[i], "/", cities[i], "_Climate_", yrs[j], ".txt")
     indices <- 365 * (j - 1) + 1:365
     data <- daily[[i]][indices, ] %>%
       ungroup() %>%
@@ -36,7 +38,7 @@ for (i in 1:length(daily)){
 for (i in 1:length(hourly_data)){
   years <- unique(hourly_data[[i]]$year)
   for (j in 1:3){
-    filenm <- paste0("~/WORK/SWMM_Rain_Gardens/City_Analysis/", cities[i], "/", cities[i], "_PPT_", yrs[j], ".txt")
+    filenm <- paste0("Sims/Continuous/", cities[i], "/", cities[i], "_PPT_", yrs[j], ".txt")
     data <- hourly_data[[i]] %>%
       ungroup() %>%
       filter(year == years[j]) %>%

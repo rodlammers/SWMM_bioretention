@@ -1,11 +1,11 @@
 #Separate precipitation series into events
 library(dplyr)
 library(zoo)
-load(file = "~/WORK/SWMM_Rain_Gardens/PRISM Analysis/Hourly Station Precip.Rdata") #hourly precipitation data in inches
+load(file = "../Data/Hourly Station Precip.Rdata") #hourly precipitation data in inches
 
 event_separation <- function(data, city){
   #Get IDF Curve for city
-  IDF <- read.csv(paste0("~/WORK/SWMM_Rain_Gardens/City_Analysis/", city, "_IDF.csv"))
+  IDF <- read.csv(paste0("../Data/", city, "_IDF.csv"))
   
   #Interpolate to get all durations
   IDF_all <- as.data.frame(apply(IDF[,2:ncol(IDF)], 2, function(d, h){
@@ -63,27 +63,3 @@ event_separation <- function(data, city){
   
 }
 
-# cities <- c("New_Orleans",
-#             "Atlanta",
-#             "Seattle",
-#             "Des_Moines",
-#             "Tampa",
-#             "Elko",
-#             "Los_Angeles",
-#             "Columbus",
-#             "Colorado_Springs")
-# 
-# atl_events <- event_separation(hourly_data[[2]], cities[2])
-
-
-# #Plot
-# library(ggplot2)
-# library(plotly)
-# 
-# p <- ggplot(data, aes(y = value, x = date)) +
-#   geom_line(col = "black") +
-#   #geom_rect(data = test2, aes(xmin = start, xmax = end), ymin = 0, ymax = 0.5, fill = adjustcolor("red", alpha.f = 0.5))
-#   annotate("rect", xmin = test2$start, xmax = test2$end, ymin = 0, ymax = 0.3, fill = "red", alpha = 0.2)
-# 
-#   
-# ggplotly(p)

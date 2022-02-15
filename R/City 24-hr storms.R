@@ -18,7 +18,7 @@ storm_vals <- list()
 par(mfrow = c(3, 3), mar = c(4, 4, 2, 0.5))
 for (i in 1:length(cities)){
   #Get IDF Curve for city
-  IDF <- read.csv(paste0("~/WORK/SWMM_Rain_Gardens/City_Analysis/", cities[i], "_IDF.csv"))
+  IDF <- read.csv(paste0("Data/", cities[i], "_IDF.csv"))
   
   rains <- filter(IDF, Hour == 24) %>%
     select(-Hour)
@@ -26,23 +26,6 @@ for (i in 1:length(cities)){
   rains <- rains[1:7]
   
   years <- as.numeric(substr(colnames(rains), 2, nchar(colnames(rains))))
-  ##Extrapolating to predict more frequent rain events - not sure this is very accurate
-  # plot(years, rains[1,], log = "xy", xlim = c(0.1, 100), ylim = c(min(as.numeric(rains[1,])) / 3, max(as.numeric(rains[1,]))),
-  #      main = cities[i], ylab = "Rain depth [in]", xlab = "RI")
-  # y <- log10(as.numeric(rains[1,]))
-  # x <- log10(years)
-  # fit <- lm(y ~ x)
-  # predicted <- predict(fit, newdata = data.frame("x" = log10(c(0.5, 1/12))))
-  # 
-  # abline(fit)
-  # points(c(0.5, 1/12), 10^predicted, col = "red")
-  # legend("bottomright", legend = paste(c("1-yr =", "6-mo =", "1-mo ="), round(c(rains[1,1], 10^predicted), 2)), pch = NA, bty = "n")
-  # 
-  # if (cities[i] == "Seattle"){
-  #   storm_vals[[i]] <- unlist(c(10^predicted[2], rains[1, c(1, 2, 4, 6, 7)]))
-  # }else{
-  #   storm_vals[[i]] <- unlist(c(rev(10^predicted), rains[1, c(2, 4, 6, 7)]))
-  # }
   
   ##Just select frequent rain events as 1/2 and 1/4 of 2-yr event
   storm_vals[[i]] <- unlist(c(rains[1, 2] * c(0.25, 0.5), rains[1, c(2, 4, 6, 7)]))
@@ -52,7 +35,7 @@ for (i in 1:length(cities)){
 }  
 
 #Get storm temporal distributions
-design_storms <- read.csv("~/WORK/SWMM_Rain_Gardens/City_Analysis/City_design_storms_v2.csv")
+design_storms <- read.csv("Data/City_design_storms_v2.csv")
 
 design_out <- list()
 par(mfrow = c(3, 3), mar = c(4, 4, 2, 0.5))
@@ -93,7 +76,7 @@ for (i in 1:length(cities)){
 #Create files
 for (i in 1:length(cities)){
   for (j in 1:length(rain)){
-    write.table(hyeto[[i]][[j]], paste0("~/WORK/SWMM_Rain_Gardens/City_Analysis/Design_Storms_NRCS/", cities[i], "/Design_Storms/Rainfall_", rain[j], ".dat"), sep = "\t", row.names = FALSE, 
+    write.table(hyeto[[i]][[j]], paste0("Sims/Design_Storms/", cities[i], "/Rainfall_", rain[j], ".dat"), sep = "\t", row.names = FALSE, 
                 col.names = TRUE, quote = FALSE)
   }
 }
@@ -101,6 +84,7 @@ for (i in 1:length(cities)){
 ###################################
 #Run analyses - for all cities, all ratios, all rain events, 3 soil types - also plot results
 
+#Function to plot hydrographs
 plot_hydrographs <- function(results){
   
   zoo::plot.zoo(results[[1]][[1]][[1]], ylab = "Q [cfs]", las = 1, xlab = "Time", lwd = 2, 
@@ -119,6 +103,7 @@ plot_hydrographs <- function(results){
   #print(max(results[[length(results)]]$Outfall$total_inflow))
 }
 
+#Gets modeled discharge at a selected location
 get_outflow <- function(swmm_files, location = "Outfall"){
   
   # #Get the output discharge at the outfall
@@ -129,21 +114,18 @@ get_outflow <- function(swmm_files, location = "Outfall"){
   
 }
 
+#Gets the swmm report file
 get_report <- function(swmm_files){
   rpt <- read_rpt(swmm_files)
   
   return(rpt[1:4])
 }
 
+#Calculates peak flow, time of peak, and runoff volume for a simulation
 summarize_results <- function(results, report){
   peaks <- sapply(results, function(x){max(x[[1]][[1]])})
   time <- sapply(results, function(x){which.max(x[[1]][[1]])})
-  #vol <- sapply(results, function(x){sum(x$Outfall$total_inflow) * 5 * 60 / 0.94 * 2.59 / 5280 ^ 2 * 12})
-  # vol <- sapply(report, function(x){
-  #   y <- x$flow_routing_continuity %>%
-  #     filter(Component == "External Outflow")
-  #   return(y$Volume_b) #depth of runoff in 10^6 gal
-  # })
+
   vol <- sapply(results, function(x){sum(x[[1]][[1]])})
   
   out <- data.frame(peaks,
@@ -154,7 +136,7 @@ summarize_results <- function(results, report){
   return(out)
 }
 
-#Fix subcatchment report
+#Fix subcatchment report - I think the format changed with newer versions of SWMM
 fix_report <- function(y){
   nc <- ncol(y$subcatchment_runoff_summary)
   vals <- apply(y$subcatchment_runoff_summary[,nc], 1, strsplit, "\\s+")
@@ -179,8 +161,9 @@ fix_report <- function(y){
   return(y)
 }
 
-subcatchment_results <- function(ratio, rain, soil, city, dir_name = "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis"){
-  filenm <- paste0(dir_name, "/", city, "/", "Design_Storms/", city, "_", soil, "_Rainfall_", rain, "_", ratio * 100, ".rpt")
+#Get results by subcatchment
+subcatchment_results <- function(ratio, rain, soil, city, dir_name){
+  filenm <- paste0(dir_name, "/", city, "/", city, "_", soil, "_Rainfall_", rain, "_", ratio * 100, ".rpt")
   
   rpt <- read_rpt(filenm)
   rpt <- fix_report(rpt)
@@ -199,14 +182,13 @@ subcatchment_results <- function(ratio, rain, soil, city, dir_name = "C:/Users/r
                         rain = rain,
                         soil = soil,
                         city = city)
-
- #summary <- data.frame(cum_vol_red = Total_Runoff_Depth.y 
   
   return(summary)
 }
 
-subcatchment_results2 <- function(ratio, rain, soil, city, dir_name = "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis"){
-  filenm <- paste0(dir_name, "/", city, "/", "Design_Storms/", city, "_", soil, "_Rainfall_", rain, "_", ratio * 100, ".rpt")
+#Alternative approach
+subcatchment_results2 <- function(ratio, rain, soil, city, dir_name){
+  filenm <- paste0(dir_name, "/", city, "/", city, "_", soil, "_Rainfall_", rain, "_", ratio * 100, ".rpt")
   
   rpt <- read_rpt(filenm)
   rpt <- fix_report(rpt)
@@ -260,26 +242,27 @@ subcatchment_results2 <- function(ratio, rain, soil, city, dir_name = "C:/Users/
                         soil = soil,
                         city = city)
   
-  #summary <- data.frame(cum_vol_red = Total_Runoff_Depth.y 
-  
   return(summary)
 }
 
-source("~/WORK/SWMM_Rain_Gardens/Run SWMM Function.R")
+##################################################
+#Run simulations
+source("R/Run SWMM Function.R")
 
 ratio <- c(0, 0.01, 0.05, 0.1, 0.15, 0.2)
 rains <- c("1_month", "6_month", "2yr", "10yr", "50yr", "100yr")
 soils <- c("low", "med", "high")
-inp_file <- "~/WORK/SWMM_Rain_Gardens/City_Analysis/SHC_NEW_event_noflood.inp"
 
-# results <- SWMM_event(ratio = ratio, dir_name = dir_name, inp_file = "~/WORK/SWMM_Rain_Gardens/City_Analysis/SHC_NEW_event.inp", 
-#                       soils = "med", city = city, rain_file = rain_file, rain_name = rain_name)
+#Note swmmr requires the full path name. This will need to be changed here
+full_path <- "C:/Users/lamme1r/Documents/SWMM_Bioretention"
+inp_file <- file.path(full_path, "SHC_NEW_event_noflood.inp")
 
 #RUN SWMM FOR EACH CITY, STORM EVENT, SOIL, and BMP SCENARIO
 for (i in 1:length(cities)){
 #for (i in 2){
   city <- cities[i]
-  dir_name <- paste0("C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis/Design_Storms_NRCS/", city, "/Design_Storms")
+  
+  dir_name <- paste0(full_path, "/Sims/Design_Storms/", city)
   
   for (j in 1:length(soils)){
     
@@ -301,20 +284,12 @@ for (i in 1:length(cities)){
       results[[k]] <- lapply(files, get_outflow)
     }
     
-    #Plot hydrographs
-    # png(paste0(dir_name, "/Hydrographs_", soils[j], ".png"), type = "cairo", units = "in",
-    #     height = 5, width = 6.5, res = 500)
-    # par(mfrow = c(2, 3), mar = c(4, 4, 2, 0.5))
-    # for (k in 1:length(results)){
-    #   plot_hydrographs(results[[k]])
-    #   title(main = rains[k])
-    # }
-    # dev.off()
   }
 }
 
 
-
+####################################
+#GET RESULTS
 #Plot all hydrographs - also summarize by city
 library(swmmr)
 source("~/WORK/R Functions/Plot Functions.R")
@@ -331,8 +306,8 @@ for (i in 1:length(cities)){
   all_cities_sub[[i]] <- list()
   all_cities_sub2[[i]] <- list()
   city <- cities[i]
-  #dir_name <- paste0("C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis/", city, "/Design_Storms")
-  dir_name <- paste0("C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis/Design_Storms_NRCS/", city, "/Design_Storms")
+
+  dir_name <- paste0(full_path, "/Sims/Design_Storms/", city)
   
   results <- list()
   report <- list()
@@ -367,9 +342,9 @@ for (i in 1:length(cities)){
       
       #Get subcatchment-averaged performance and compare to watershed
       sub_results[[j]][[k]] <- do.call("rbind", lapply(ratio[2:6], subcatchment_results, rain = rains[k], soil = soils[j], city = cities[i],
-                                       dir_name = "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis/Design_Storms_NRCS"))
+                                       dir_name = file.path(full_path, "Sims", "Design_Storms")))
       sub_results2[[j]][[k]] <- do.call("rbind", lapply(ratio[2:6], subcatchment_results2, rain = rains[k], soil = soils[j], city = cities[i],
-                                                        dir_name = "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis/Design_Storms_NRCS"))
+                                                        dir_name = file.path(full_path, "Sims", "Design_Storms")))
     }
     
     #Plot hydrographs
@@ -481,6 +456,8 @@ for (i in 1:length(cities)){
 
 }
 
+##########################
+#Collect data and make summary figures
 all_cities_df <- do.call("rbind", do.call("rbind", all_cities_summary))
 storm_vals2 <- list()
 for (i in 1:length(storm_vals)){
@@ -492,10 +469,15 @@ storm_vals_df <- do.call("rbind", storm_vals2)
 
 all_cities_df <- left_join(all_cities_df, storm_vals_df, by = c("City", "Event"))
 
-write.csv(all_cities_df, "~/WORK/SWMM_Rain_Gardens/City_Analysis/Design_Storm_Performance_Results.csv", row.names = FALSE)
+#write.csv(all_cities_df, "Results/Design_Storm_Performance_Results.csv", row.names = FALSE)
 
-png("~/WORK/SWMM_Rain_Gardens/City_Analysis/Performance_Plots_all_NRCS_basin.png", type = "cairo",
-    units = "in", height = 9, width = 6.5, res = 500)
+all_cities_df <- read.csv("Results/Design_Storm_Performance_Results.csv") %>%
+  mutate(treatment = factor(treatment, levels = c("1%", "5%", "10%", "15%", "20%")))
+
+source("~/WORK/R Functions/Gradient Legend.R")
+# png("Results/Performance_Plots_all_NRCS_basin.png", type = "cairo",
+#     units = "in", height = 9, width = 6.5, res = 500)
+pdf("Results/Figure_3.pdf", height = 9, width = 6.5, pointsize = 12)
 par(mfcol = c(4, 3), mar = c(4.5, 2.5, 1.5, 0.5), oma = c(3, 0.8, 2, 1.4), mgp = c(2.5, 0.8, 0))
 
 colors2 <- adjustcolor(RColorBrewer::brewer.pal(5, "Greens"), alpha.f = 0.7)
@@ -510,7 +492,7 @@ for (i in 1:length(soils)){
   axis(side = 1, at = seq(0, 14, 2) * 2.54, labels = seq(0, 14, 2), line = 1.7, mgp = c(2, 0.5, 0))
   add_label(0.98, 1.28, "[in]")
   add_label(0.98, 1.11, "[cm]")
-  mtext(paste(Hmisc::capitalize(soils[i]), "Infiltration"), side = 3, line = 2, font = 2)
+  mtext(paste(tools::toTitleCase(soils[i]), "Infiltration"), side = 3, line = 2, font = 2)
   if (i == 1){
     mtext("% Peak Flow Reduction", side = 2, line = 2.2, cex = 0.7)
   }else if (i == 3){
@@ -529,7 +511,7 @@ for (i in 1:length(soils)){
            bg = colors_rain[(5 * (j  - 1) + 1):(5 * j)], pch = 21, cex = 1.3)
   }
   
-  axis(side = 1, at = 2:6, labels = c("1%", "5%", "10%", "15%", "20%"))
+  axis(side = 1, at = 1:5, labels = c("1%", "5%", "10%", "15%", "20%"))
   if (i == 1){
     mtext("% Peak Flow Reduction", side = 2, line = 2.2, cex = 0.7)
   }else if(i == 3){
@@ -538,12 +520,6 @@ for (i in 1:length(soils)){
   } else if (i == 2){
     mtext("Drainage Area Ratio", side = 1, line = 2.5, cex = 0.7)
   }
-  
-  # plot(time_diff ~ Rain, soils_sub, type = "p", pch = 21, bg = colors2, cex = 1.3,
-  #      las = 1, ylab = "", xlab = "", main = "Peak Timing", ylim = range(all_cities_df$time_diff))
-  # if (i == 1){
-  #   mtext("Peak Flow Delay [min]", side = 2, line = 2.5, cex = 0.7)
-  # }
   
   plot(vol_red ~ I(Rain * 2.54), soils_sub, type = "p", pch = 21, bg = colors2, cex = 1.3,
        las = 1, ylab = "", xlab = "", main = "Runoff Volume", xpd = NA, ylim = range(all_cities_df$vol_red), xaxt = "n")
@@ -569,7 +545,7 @@ for (i in 1:length(soils)){
     points(vol_red ~ as.numeric(treatment), soils_sub[(5 * (j  - 1) + 1):(5 * j),], 
            bg = colors_rain[(5 * (j  - 1) + 1):(5 * j)], pch = 21, cex = 1.3)
   }
-  axis(side = 1, at = 2:6, labels = c("1%", "5%", "10%", "15%", "20%"))
+  axis(side = 1, at = 1:5, labels = c("1%", "5%", "10%", "15%", "20%"))
   if (i == 1){
     mtext("% Volume Reduction", side = 2, line = 2.2, cex = 0.7)
   }else if(i == 3){
@@ -584,86 +560,30 @@ for (i in 1:length(soils)){
 
 legend("bottomleft", legend = c("1%", "5%", "10%", "15%", "20%"), pt.bg = colors2, pch = 21, cex = 1.2, bty = "n",
        title = "Drainage Area Ratio", horiz = TRUE, inset = c(-2.5, -0.7), xpd = NA)
-legend("bottomleft", legend = round(10 ^ seq(log10(min(soils_sub$Rain)), log10(max(soils_sub$Rain)), length.out = 5) * 2.54, 1), 
-        pt.bg = cRamp_legend(5, "BuPu", alpha = 0.7), pch = 21, cex = 1.2, bty = "n", title = "Storm Depth [cm]",
-       horiz = TRUE, inset = c(-0.5, -0.7), xpd = NA)
-
-#mtext("Storm Depth [in]", side = 1, outer = TRUE, line = 0, cex = 0.7)
+# legend("bottomleft", legend = round(10 ^ seq(log10(min(soils_sub$Rain)), log10(max(soils_sub$Rain)), length.out = 5) * 2.54, 1), 
+#         pt.bg = cRamp_legend(5, "BuPu", alpha = 0.7), pch = 21, cex = 1.2, bty = "n", title = "Storm Depth [cm]",
+#        horiz = TRUE, inset = c(-0.5, -0.7), xpd = NA)
+color.legend(-1, -22, 5, -19, legend = round(10 ^ seq(log10(min(soils_sub$Rain)), log10(max(soils_sub$Rain)), length.out = 5) * 2.54, 1),
+              rect.col = cRamp_legend(5, "BuPu", alpha = 0.7), cex = 0.8, xpd = NA, align = "rb")
+text(x = 2, y = -17, labels = "Storm Depth [cm]", adj = 0.5, xpd = NA, cex = 1.2)
+                                             
 dev.off()
 
-
-#boxplot summaries
-# source("~/WORK/R Functions/Plot Functions.R")
-# 
-# png("~/WORK/SWMM_Rain_Gardens/City_Analysis/Performance_boxplots.png", type = "cairo",
-#     units = "in", height = 4.5, width = 6.5, res = 500)
-# par(mfcol = c(2, 3), mar = c(2.5, 2.5, 2, 0.5), oma = c(1, 1, 2, 0), mgp = c(2.5, 1, 0))
-# for (i in 1:length(soils)){
-#   soils_sub <- filter(all_cities_df, Soil == soils[i]) %>%
-#     mutate(treatment = droplevels(treatment))
-#   
-#   
-#   rodplot(peak_red ~ treatment, soils_sub, col = colors2, las = 1, ylim = range(all_cities_df$peak_red), xlab = "", ylab = "",
-#           main = "Peak Flow")
-#   mtext(paste(Hmisc::capitalize(soils[i]), "Infiltration Capacity"), side = 3, line = 2, font = 2)
-#   if (i == 1){
-#     mtext("% Peak Flow Reduction", side = 2, line = 2.5, cex = 0.7)
-#   }
-#   
-#   # rodplot(time_diff ~ treatment, soils_sub, col = colors2, las = 1, ylim = range(all_cities_df$time_diff), xlab = "", ylab = "",
-#   #         main = "Peak Timing")
-#   # if (i == 1){
-#   #   mtext("Peak Flow Delay [min]", side = 2, line = 2.5, cex = 0.7)
-#   # }
-#   
-#   rodplot(vol_red ~ treatment, soils_sub, col = colors2, las = 1, ylim = range(all_cities_df$vol_red), xlab = "", ylab = "",
-#           main = "Runoff Volume")
-#   if (i == 1){
-#     mtext("% Volume Reduction", side = 2, line = 2.5, cex = 0.7)
-#   }
-#   
-# }
-# mtext("Loading Ratio", side = 1, outer = TRUE, line = 0, cex = 0.7)
-# dev.off()
-
-#Subbasin summary results
-# all_subs_df <- do.call("rbind", do.call("rbind", all_cities_sub))
-# 
-# colors <- adjustcolor(RColorBrewer::brewer.pal(5, "Greens"))
-# 
-# 
-# png("~/WORK/SWMM_Rain_Gardens/City_Analysis/All_Cities_Subbasin_Results.png", type = "cairo", units = "in",
-#     height = 5, width = 5, res = 500)
-# par(mfrow = c(2, 1), mar = c(2.5, 4, 1.5, 0.5), mgp = c(2.1, 0.8, 0), oma = c(1, 0, 0, 0))
-# plot(I(cum_peak_red - peak_red) ~ storm_val, all_subs_df, pch = 21, bg = colors, ylab = "Subbasins - Watershed\nPeak % Reduction",
-#      xlab = "", las = 1, main = "Peak Flow", ylim = c(-50, 50))
-# add_label(-0.05, -0.05, "(a)")
-# abline(h = 0, lwd = 2)
-# text("Watershed Effects > Subbasins", x = 14, y = -15, pos = 2)
-# text("Subasin Effects > Watershed", x = 14, y = 15, pos = 2)
-# 
-# plot(I(cum_vol_red - vol_red) ~ storm_val, all_subs_df, pch = 21, bg = colors, ylab = "Subbasins - Watershed\nVolume % Reduction",
-#      xlab = "Rainfall Depth [in]", las = 1, main = "Runoff Volume", xpd = NA, ylim = c(-50, 50))
-# add_label(-0.05, -0.05, "(b)")
-# abline(h = 0, lwd = 2)
-# text("Watershed Effects > Subbasins", x = 14, y = -15, pos = 2)
-# text("Subasin Effects > Watershed", x = 14, y = 15, pos = 2)
-# 
-# legend("bottomleft", legend = c("1%", "5%", "10%", "15%", "20%"), pch = 21, pt.bg = colors, bty = "n", ncol = 2)
-# dev.off()
 
 ######################################
 #Different computing - uses hydrograph of runoff to be more consistent with continuous simulation results. Very little difference
 #between this method and using the summary report numbers
 all_subs_df2 <- do.call("rbind", do.call("rbind", all_cities_sub2))
 
-write.csv(all_subs_df2, "~/WORK/SWMM_Rain_Gardens/City_Analysis/Design_Storm_Subbasin_Scaling_Results.csv", row.names = FALSE)
+write.csv(all_subs_df2, "Results/Design_Storm_Subbasin_Scaling_Results.csv", row.names = FALSE)
 
 colors <- adjustcolor(RColorBrewer::brewer.pal(5, "Greens"))
 
 
-png("~/WORK/SWMM_Rain_Gardens/City_Analysis/All_Cities_Subbasin_Results_NRCS_basin.png", type = "cairo", units = "in",
-    height = 6, width = 5.5, res = 500)
+# png("Results/All_Cities_Subbasin_Results_NRCS_basin.png", type = "cairo", units = "in",
+#     height = 6, width = 5.5, res = 500)
+pdf("Results/Figure_4.pdf",
+    height = 6, width = 5.5, pointsize = 12)
 par(mfrow = c(2, 1), mar = c(4, 4, 1.5, 2), mgp = c(2.1, 0.8, 0), oma = c(1, 0, 0, 0))
 plot(I(cum_peak_red - peak_red) ~ I(storm_val * 2.54), all_subs_df2, pch = 21, bg = colors, ylab = "Subbasins - Watershed\nPeak % Reduction",
      xlab = "", las = 1, main = "Peak Flow", ylim = c(-50, 50), xaxt = "n")
@@ -696,17 +616,17 @@ dev.off()
 
 #Comparing % reduction in peak flow vs volume
 source("~/WORK/R Functions/Plot Functions.R")
-png("~/WORK/SWMM_Rain_Gardens/City_Analysis/Peak_v_vol_results_NRCS_basin.png", type = "cairo", units = "in",
+png("Results/Peak_v_vol_results_NRCS_basin.png", type = "cairo", units = "in",
     height = 4, width = 6.5, res = 500)
 par(mfrow = c(1,3), mar = c(4, 3, 2, 0.5), oma = c(3, 1, 0, 0))
-max_y <- max(all_cities_df$peak_red - all_cities_df$vol_red)
+max_y <- max(all_cities_df$peak_red - all_cities_df$vol_red) + 10
 for (i in 1:length(soils)){
   soils_sub <- filter(all_cities_df, Soil == soils[i])
   colors_rain <- cRamp(log10(soils_sub$Rain), "BuPu", alpha = 0.7)
   
   plot(I(peak_red - vol_red) ~ as.numeric(treatment), soils_sub, type = "n", cex = 1.3,
        las = 1, ylab = "", xlab = "", ylim = c(-max_y, max_y), xaxt = "n",
-       main = paste(Hmisc::capitalize(soils[i]), "Infiltration")) 
+       main = paste(tools::toTitleCase(soils[i]), "Infiltration")) 
   add_label(-0.05, -0.02, paste0("(", letters[i], ")"))
   for(j in 1:(nrow(soils_sub) / 5)){
     lines(I(peak_red - vol_red) ~ as.numeric(treatment), soils_sub[(5 * (j  - 1) + 1):(5 * j),], col = colors_rain[5 * j])
@@ -714,45 +634,19 @@ for (i in 1:length(soils)){
            bg = colors_rain[(5 * (j  - 1) + 1):(5 * j)], pch = 21, cex = 1.3)
   }
   
-  text("Peak Red. > Vol Red.", x = 6.2, y = 45, pos = 2)
-  text("Vol Red. > Peak Red.", x = 6.2, y = -45, pos = 2)
+  text("Peak Red. > Vol Red.", x = 6.2, y = 65, pos = 2)
+  text("Vol Red. > Peak Red.", x = 6.2, y = -65, pos = 2)
   
   abline(h = 0, lwd = 2)
   axis(side = 1, at = 2:6, labels = c("1%", "5%", "10%", "15%", "20%"))
 }
 mtext(side = 2, text = "Peak Flow - Volume Reduction [%]", outer = TRUE, line = -0.5, cex = 0.8)
 mtext(side = 1, text = "Drainage Area Ratio", outer = TRUE, line = -1.5, cex = 0.8)
-legend("bottomleft", legend = round(10 ^ seq(log10(min(soils_sub$Rain)), log10(max(soils_sub$Rain)), length.out = 5) * 2.54, 1), 
-       pt.bg = cRamp_legend(5, "BuPu", alpha = 0.7), pch = 21, cex = 1.2, bty = "n", title = "Storm Depth [cm]",
-       horiz = TRUE, inset = c(-1.65, -0.35), xpd = NA)
+# legend("bottomleft", legend = round(10 ^ seq(log10(min(soils_sub$Rain)), log10(max(soils_sub$Rain)), length.out = 5) * 2.54, 1), 
+#        pt.bg = cRamp_legend(5, "BuPu", alpha = 0.7), pch = 21, cex = 1.2, bty = "n", title = "Storm Depth [cm]",
+#        horiz = TRUE, inset = c(-1.65, -0.35), xpd = NA)
+color.legend(-4.5, -112, 0.5, -107, legend = round(10 ^ seq(log10(min(soils_sub$Rain)), log10(max(soils_sub$Rain)), length.out = 5) * 2.54, 1),
+             rect.col = cRamp_legend(5, "BuPu", alpha = 0.7), cex = 0.7, xpd = NA, align = "rb")
+text(x = -2, y = -102, labels = "Storm Depth [cm]", adj = 0.5, xpd = NA, cex = 1.1)
 dev.off()
-#############################################
 
-dir <- "C:/Users/rwl21875/Documents/WORK/SWMM_Rain_Gardens/City_Analysis/Atlanta/Design_Storms/Atlanta_"
-soil <- "high"
-rain <- "2yr"
-size <- "10"
-
-files <- paste0(dir, soil, "_Rainfall_", rain, "_", size, ".rpt")
-
-rpt <- read_rpt(files)
-
-
-rpt <- fix_report(rpt)
-
-#Get input
-inp_file <- stringr::str_replace(files, "rpt", "inp")
-inputs <- read_inp(inp_file)
-
-lid_inp <- left_join(inputs$lid_usage, inputs$subcatchments, by = c("Subcatchment" = "Name")) %>%
-  filter(`LID Process` == "BioRet1") %>%
-  mutate(Area_treated = Area.x / 43560 * as.numeric(size),
-           Area_frac = Area_treated / Area.y)
-
-comb <- left_join(rpt$lid_performance_summary, rpt$subcatchment_runoff_summary, by = "Subcatchment") %>%
-  filter(`LID Control` == "BioRet1") %>%
-  left_join(lid_inp, by = "Subcatchment") %>%
-  mutate(Tot_Outflow = Surface_Outflow + Drain_Outflow,
-         RC_bioret = Tot_Outflow / Total_Inflow,)
-
-plot(RC_bioret ~ Runoff_Coeff, comb)

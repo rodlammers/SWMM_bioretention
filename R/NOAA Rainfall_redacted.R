@@ -3,48 +3,7 @@ library(dplyr)
 source("~/WORK/R Functions/Plot Functions.R")
 options(noaakey = "") #Need to obtain and set personalized key to access NOAA API
 
-# ATL <- data.frame("latitude" = 33.792,
-#                   "longitude" = -84.385,
-#                   "id" = "Atlanta")
-# stations_ATL <- meteo_nearby_stations(lat_lon_df = ATL,
-#                                       radius = 20,
-#                                       var = c("TAVG", "PRCP"))
-# 
-# data <- meteo_pull_monitors(stations_ATL[[1]]$id[54])
-# 
-# test <- ncdc(datasetid = "PRECIP_15", datatypeid = "QPCP", startdate = "2010-01-01", enddate = "2010-12-31", stationid = "COOP:099486",
-#              limit = 1000)
-# 
-# clean_data <- test$data %>%
-#   mutate(date = gsub("T", " ", date),
-#          date = as.POSIXct(date)) %>%
-#   filter(value != 99999)
-# 
-# plot(value ~ date, clean_data)
-# 
-# stations <- ncdc_stations(startdate = "1981-01-01", enddate = "2010-12-31", datasetid = "PRECIP_15", limit = 1000, locationid = "FIPS:13")
-# 
-# stations_clean <- stations$data %>%
-#   rowwise() %>%
-#   mutate(dist = distHaversine(p1 = c(longitude, latitude), p2 = c(ATL$longitude[1], ATL$latitude[1])) / 1000) %>%
-#   arrange(dist)
-# 
-# metadata <- ncdc_stations(stationid = "COOP:092485")
-# daily_data <- ncdc(stationid = "COOP:092485", datasetid = "GHCND", startdate = "1981-01-01", enddate = "1981-12-31", limit = 1000)
-# 
-# data <- ncdc(datasetid = "PRECIP_15", datatypeid = "QPCP", startdate = "2010-01-01", enddate = "2010-12-31", stationid = "COOP:092485",
-#               limit = 1000)
-# clean_data <- data$data %>%
-#   mutate(date = gsub("T", " ", date),
-#          date = as.POSIXct(date)) %>%
-#   filter(value < 50000)
-# plot(value ~ date, clean_data, type = "l")
-
-
-#Atlanta airport - hourly precip and daily temp
-# atl_daily <- "WBAN:13874"
-# atl_hourly <- "COOP:090451"
-
+#Selected weather stations
 stations <- c("COOP:166660", #NOLA Airport
               "COOP:090451", #ATL Airport
               "COOP:457473", #Seattle Airport
@@ -53,7 +12,6 @@ stations <- c("COOP:166660", #NOLA Airport
               "COOP:262573", #Elko, NV
               "COOP:045114", #Los Angeles Airport
               "COOP:331786", #Columbus Airport
-              #"COOP:485345", #Yellowstone, WY
               "COOP:051778") #colorado Springs
 
 names(stations) <- c("New Orleans",
@@ -64,16 +22,15 @@ names(stations) <- c("New Orleans",
                      "Elko",
                      "Los Angeles",
                      "Columbus",
-                     #"Yellowstone",
                      "Colorado Springs")
 
 
+#Function to get precip data for weather stations
 get_ppt_data <- function(station, name, choose_years = NULL, time_zone = NULL, output = "hourly"){
   
-  # all_ppt <- list()
-  # for (j in 1:length(stations)){
     
-  #Split years into thirds to make sure we get all the data
+  #Split years into thirds to make sure we get all the data - there seems to be
+  #a limit to the amount of data that can be retrieved at one time
     if(!is.null(choose_years)){
       years <- choose_years
     }else{
@@ -102,7 +59,6 @@ get_ppt_data <- function(station, name, choose_years = NULL, time_zone = NULL, o
           ppt_yrs[[count]] <- data$data %>%
             mutate(date = gsub("T", " ", date),
                    date = as.POSIXct(date)) %>%
-            #filter(value < 50000)
             mutate(value = if_else(value > 50000, -100L, value))
           
           count <- count + 1
@@ -111,14 +67,6 @@ get_ppt_data <- function(station, name, choose_years = NULL, time_zone = NULL, o
       }
     }
     
-  #   all_ppt[[j]] <- do.call("rbind", ppt_yrs)
-  #   
-  # }
-  # ppt <- ncdc(stationid = atl_hourly, datasetid = "PRECIP_HLY", startdate = "2010-01-01", enddate = "2010-12-31", limit = 1000)
-  # clean_data <- ppt$data %>%
-  #   mutate(date = gsub("T", " ", date),
-  #          date = as.POSIXct(date)) %>%
-  #   filter(value < 50000)
   
   all_data <- do.call("rbind", ppt_yrs)
     
@@ -157,14 +105,15 @@ get_ppt_data <- function(station, name, choose_years = NULL, time_zone = NULL, o
 
 }
 
-#test <- get_ppt_data(station = stations[1], output = "yearly")
 
-par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
-yearly_data <- Map(get_ppt_data, stations, names(stations), output = "yearly")
+#Get and print yearly data
+# yearly_data <- Map(get_ppt_data, stations, names(stations), output = "yearly")
+# 
+# save(yearly_data, file = "Data/Yearly Station Precip.Rdata")
 
-save(yearly_data, file = "~/WORK/SWMM_Rain_Gardens/PRISM Analysis/Yearly Station Precip.Rdata")
+#Select low-med-high precipitation years for each city - selected based on
+#pots of yearly data
 
-#Select low-med-high precipitation years for each city
 ppt_years <- list(c(1999, 2002, 2009), #New Orleans
               c(1999, 1993, 1994), #Atlanta
               c(2000, 2001, 1990), #Seattle
@@ -173,7 +122,6 @@ ppt_years <- list(c(1999, 2002, 2009), #New Orleans
               c(2002, 2009, 2005), #Elko
               c(2002, 2000, 1993), #Los Angeles
               c(1991, 1993, 1995), #Columbus
-             # c(2009, 1995, 1991), #Yellowstone
               c(2005, 2009, 2004)) #Colorado Springs
 
 time_zones <- list(c("America/Chicago", 6), #New Orleans
@@ -202,12 +150,9 @@ for (i in 1:length(hourly_data)){
     data <- filter(hourly_data[[i]], year == years[j])
     plot(value ~ date, data, ylab = "PPT [in/hr]", main = paste(name, "-", data$year[1]), type = "h", ylim = c(0, ymax))
   }
-  # plyr::d_ply(hourly_data[[i]], "year", function(x, name, ymax){
-  #   plot(value ~ date, x, ylab = "PPT [in/hr]", main = paste(name, "-", x$year[1]), type = "h", ylim = c(0, ymax))
-  # }, names(hourly_data)[i], ymax)
 }
 
-save(list = "hourly_data", file = "~/WORK/SWMM_Rain_Gardens/PRISM Analysis/Hourly Station Precip.Rdata")
+save(list = "hourly_data", file = "Data/Hourly Station Precip.Rdata")
 
 #Get temperature data
 temp_stations <- c("72231012916", #New Orleans,
@@ -218,20 +163,12 @@ temp_stations <- c("72231012916", #New Orleans,
                    "72582524121", #Elko
                    "72295023174", #Los Angeles
                    "72428014821", #Columbus
-                  # "72666494173", #Yellowstone
                    "72466093037") #Colorado Springs
-                    
+                  
 get_daily_data <- function(station, years){
   daily <- list()
   for (i in 1:length(years)){
-    #daily[[i]] <- lcd(station, year = years[i]) %>%
-      # filter(!is.na(dailyaveragedrybulbtemperature), dailyaveragedrybulbtemperature != "") %>%
-      # mutate(date = gsub("T", " ", date),
-      #        date = as.POSIXct(date),
-      #        year = lubridate::year(date))
-    
-    #If the station doesn't have daily averages, calculate them
-    #if (nrow(daily[[i]]) == 0){
+
       daily[[i]] <- lcd(station, year = years[i]) %>%
         mutate(date = gsub("T", " ", date),
                date = as.POSIXct(date),
@@ -263,9 +200,6 @@ get_daily_data <- function(station, years){
 
 daily <- Map(get_daily_data, temp_stations, ppt_years)
 
-# for (i in 1:length(temp_stations)){
-#   data <- get_daily_data(temp_stations[i], ppt_years[[i]])
-# }
 #Plot temp data by year
 for (i in 1:length(daily)){
   par(mfrow = c(3, 1))
@@ -293,4 +227,4 @@ for (i in 1:length(daily)){
 }
 
 
-save(daily, file = "~/WORK/SWMM_Rain_Gardens/PRISM Analysis/Daily station Temp.Rdata")
+save(daily, file = "~Data/Daily station Temp.Rdata")
